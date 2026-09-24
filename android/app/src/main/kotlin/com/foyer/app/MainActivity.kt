@@ -254,6 +254,17 @@ class MainActivity : FlutterActivity() {
                     }
                 }
 
+                "resetAudioMode" -> {
+                    try {
+                        audioManager.mode = AudioManager.MODE_NORMAL
+                        val restoreSpeaker = call.argument<Boolean>("restoreSpeaker") ?: true
+                        audioManager.isSpeakerphoneOn = restoreSpeaker
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("AUDIO_ERROR", e.message, null)
+                    }
+                }
+
                 "routeAudioToAlarm" -> {
                     try {
                         audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
@@ -593,7 +604,6 @@ class MainActivity : FlutterActivity() {
 
     private fun applyVolumeCeiling(audioManager: AudioManager, ceiling: Double) {
         try {
-            audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
             val clampedCeiling = ceiling.coerceIn(0.1, 1.0)
             currentVolumeCeiling = clampedCeiling
 

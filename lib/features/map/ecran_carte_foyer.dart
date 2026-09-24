@@ -112,6 +112,30 @@ class _EcranCarteFoyerState extends State<EcranCarteFoyer> with TickerProviderSt
 
   bool _isGpsActive = false;
   String _gpsStatus = 'Initialisation GPS matériel...';
+  Timer? _gpsTimeoutTimer;
+  bool _isGpsTimedOut = false;
+
+  void _startGpsTimeoutTimer() {
+    _gpsTimeoutTimer?.cancel();
+    _isGpsTimedOut = false;
+    _gpsTimeoutTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && _telemetryMap.isEmpty) {
+        setState(() {
+          _isGpsTimedOut = true;
+          _gpsStatus = 'Signal GPS en attente (Intérieur / Recherche satellite)';
+        });
+      }
+    });
+  }
+
+  void _retryGpsAcquisition() {
+    setState(() {
+      _isGpsTimedOut = false;
+      _gpsStatus = 'Acquisition GPS en cours...';
+    });
+    _startGpsTimeoutTimer();
+    _initHardwareLocation();
+  }
 
   @override
   void initState() {
@@ -133,6 +157,7 @@ class _EcranCarteFoyerState extends State<EcranCarteFoyer> with TickerProviderSt
     _initHardwareLocation();
     _initUdpTelemetryListener();
     _initFirebaseTelemetryListener();
+    _startGpsTimeoutTimer();
 
     // Check periodically for stale telemetry (e.g. signal loss > 5s) to reflect degraded state
     _staleCheckTimer = Timer.periodic(const Duration(seconds: 2), (_) {
@@ -146,6 +171,7 @@ class _EcranCarteFoyerState extends State<EcranCarteFoyer> with TickerProviderSt
   void dispose() {
     _stopHardwareLocation();
     _staleCheckTimer?.cancel();
+    _gpsTimeoutTimer?.cancel();
     _haloController.dispose();
     _interpolationController.dispose();
     _firebaseLocationsSubscription?.cancel();
@@ -198,6 +224,9 @@ class _EcranCarteFoyerState extends State<EcranCarteFoyer> with TickerProviderSt
     final now = DateTime.now();
 
     if (rawLat == null || rawLon == null || (rawLat == 0.0 && rawLon == 0.0)) return;
+
+    _gpsTimeoutTimer?.cancel();
+    _isGpsTimedOut = false;
 
     final myId = _storage.deviceId.isNotEmpty ? _storage.deviceId : 'local_device';
     final myName = _storage.memberName.isNotEmpty ? _storage.memberName : 'Moi';
@@ -441,23 +470,43 @@ class _EcranCarteFoyerState extends State<EcranCarteFoyer> with TickerProviderSt
           Positioned.fill(
             child: activeTelemetry.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppTheme.nordicSlate,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!_isGpsTimedOut) ...[
+                            const SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.nordicSlate,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ] else ...[
+                            const Icon(
+                              Icons.location_searching_rounded,
+                              size: 40,
+                              color: AppTheme.nordicSlateLight,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          Text(
+                            _gpsStatus,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.instrumentSans(fontSize: 14, color: AppTheme.textMuted),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _gpsStatus,
-                          style: GoogleFonts.instrumentSans(fontSize: 14, color: AppTheme.textMuted),
-                        ),
-                      ],
+                          if (_isGpsTimedOut) ...[
+                            const SizedBox(height: 16),
+                            FilledButton.tonal(
+                              onPressed: _retryGpsAcquisition,
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   )
                 : AnimatedBuilder(

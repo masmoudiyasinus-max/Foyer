@@ -199,6 +199,17 @@ class AudioRouterService {
     }
   }
 
+  /// Restore Android audio mode to MODE_NORMAL and restore user speaker preference
+  Future<void> resetAudioMode() async {
+    try {
+      final speakerEnabled = StorageService().isSpeakerphoneEnabled;
+      await _channel.invokeMethod('resetAudioMode', {'restoreSpeaker': speakerEnabled});
+      _isSpeakerphoneActive = speakerEnabled;
+    } on PlatformException catch (e) {
+      developer.log('Error resetting audio mode: ${e.message}', name: 'AudioRouterService');
+    }
+  }
+
   /// Plays the high-priority chime alert immediately through the speaker (rejected if Focus Mode active)
   Future<void> playChimeAlert() async {
     if (isFocusModeActive) {
@@ -210,8 +221,13 @@ class AudioRouterService {
       await routeAudioToAlarm();
       await _audioPlayer.stop();
       await _audioPlayer.play(AssetSource('audio/chime.wav'));
+      // When chime completes, restore original audio mode and user speakerphone choice
+      _audioPlayer.onPlayerComplete.first.then((_) {
+        resetAudioMode();
+      });
     } catch (e) {
       developer.log('Error playing chime: $e', name: 'AudioRouterService');
+      resetAudioMode();
     }
   }
 

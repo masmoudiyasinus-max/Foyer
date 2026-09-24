@@ -5,6 +5,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import '../theme/app_theme.dart';
 
 class UpdateInfo {
@@ -30,8 +31,8 @@ class UpdateService {
   factory UpdateService() => _instance;
   UpdateService._internal();
 
-  static const int currentVersionCode = 8;
-  static const String currentVersionName = '1.0.7';
+  static const int currentVersionCode = 9;
+  static const String currentVersionName = '1.0.8';
   static const MethodChannel _channel = MethodChannel('com.foyer.intercom/audio');
 
   // Remote metadata URL endpoint
@@ -43,7 +44,9 @@ class UpdateService {
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 4);
-      final request = await client.getUrl(Uri.parse(updateUrl));
+      // Paramètre anti-cache pour court-circuiter le cache Fastly CDN de 300s de GitHub Raw
+      final antiCacheUrl = '$updateUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+      final request = await client.getUrl(Uri.parse(antiCacheUrl));
       final response = await request.close();
 
       if (response.statusCode == HttpStatus.ok) {
@@ -177,7 +180,7 @@ class UpdateService {
     required BuildContext context,
     bool isMandatory = false,
   }) async {
-    final tempDir = Directory.systemTemp;
+    final tempDir = await getTemporaryDirectory();
     final apkFile = File('${tempDir.path}/foyer_update.apk');
     final progressController = StreamController<double>();
 

@@ -1,7 +1,7 @@
 name: foyer
 description: "Foyer - Système d'interphone domestique et coordination familiale"
 publish_to: 'none'
-version: 1.0.7+8
+version: 1.0.8+9
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -26,6 +26,7 @@ dependencies:
   # Local Persistence
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
 
   # Cloud Sync & Signaling (Fallback WAN)
   firebase_core: ^3.3.0

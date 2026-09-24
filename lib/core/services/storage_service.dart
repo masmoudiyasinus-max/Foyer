@@ -396,6 +396,7 @@ class StorageService {
   }
 
   List<TaskItem> getTasks() {
+    if (!_tasksBox.isOpen) return [];
     final List<TaskItem> list = [];
     for (final key in _tasksBox.keys) {
       final raw = _tasksBox.get(key);
@@ -411,11 +412,13 @@ class StorageService {
   }
 
   Future<void> saveTask(TaskItem task) async {
+    if (!_tasksBox.isOpen) return;
     await _tasksBox.put(task.id, task.toMap());
   }
 
   /// Mark task as tombstone for reliable sync without phantom records
   Future<void> deleteTask(String id) async {
+    if (!_tasksBox.isOpen) return;
     final raw = _tasksBox.get(id);
     if (raw is Map) {
       final task = TaskItem.fromMap(raw);
@@ -430,6 +433,7 @@ class StorageService {
   }
 
   Future<void> toggleTaskDone(String id) async {
+    if (!_tasksBox.isOpen) return;
     final raw = _tasksBox.get(id);
     if (raw is Map) {
       final task = TaskItem.fromMap(raw);
@@ -444,6 +448,7 @@ class StorageService {
   // --- Groceries ---
 
   List<TaskItem> getGroceries() {
+    if (!_groceriesBox.isOpen) return [];
     final List<TaskItem> list = [];
     for (final key in _groceriesBox.keys) {
       final raw = _groceriesBox.get(key);
@@ -492,6 +497,7 @@ class StorageService {
   // --- Invitations ---
 
   List<Invitation> getInvitations() {
+    if (!_invitationsBox.isOpen) return [];
     final List<Invitation> list = [];
     for (final key in _invitationsBox.keys) {
       final raw = _invitationsBox.get(key);
@@ -507,11 +513,13 @@ class StorageService {
   }
 
   Future<void> saveInvitation(Invitation invitation) async {
+    if (!_invitationsBox.isOpen) return;
     await _invitationsBox.put(invitation.id, invitation.toMap());
   }
 
   /// Mark invitation as tombstone
   Future<void> deleteInvitation(String id) async {
+    if (!_invitationsBox.isOpen) return;
     final raw = _invitationsBox.get(id);
     if (raw is Map) {
       final inv = Invitation.fromMap(raw);
@@ -530,6 +538,7 @@ class StorageService {
     required String memberId,
     required bool accepted,
   }) async {
+    if (!_invitationsBox.isOpen) return;
     final raw = _invitationsBox.get(invitationId);
     if (raw is Map) {
       final invitation = Invitation.fromMap(raw);
@@ -543,6 +552,7 @@ class StorageService {
   // --- Events & Nested Discussions ---
 
   List<FamilyMeetingEvent> getEvents() {
+    if (!_eventsBox.isOpen) return [];
     final List<FamilyMeetingEvent> list = [];
     for (final key in _eventsBox.keys) {
       final raw = _eventsBox.get(key);
@@ -654,6 +664,7 @@ class StorageService {
   StreamSubscription? _mealsSubscription;
 
   List<MealItem> getMeals() {
+    if (!_mealsBox.isOpen) return [];
     final list = <MealItem>[];
     for (final key in _mealsBox.keys) {
       final raw = _mealsBox.get(key);
@@ -666,6 +677,7 @@ class StorageService {
   }
 
   Future<void> saveMeal(MealItem meal) async {
+    if (!_mealsBox.isOpen) return;
     await _mealsBox.put(meal.id, meal.toMap());
     try {
       if (familyCode.isNotEmpty) {
@@ -676,6 +688,7 @@ class StorageService {
   }
 
   Future<void> deleteMeal(String id) async {
+    if (!_mealsBox.isOpen) return;
     await _mealsBox.delete(id);
     try {
       if (familyCode.isNotEmpty) {
@@ -686,6 +699,7 @@ class StorageService {
   }
 
   Future<void> toggleMealPrepared(String id) async {
+    if (!_mealsBox.isOpen) return;
     final raw = _mealsBox.get(id);
     if (raw is Map) {
       final meal = MealItem.fromMap(raw);
@@ -695,6 +709,7 @@ class StorageService {
   }
 
   Future<void> voteMeal(String mealId, String memberId, String vote) async {
+    if (!_mealsBox.isOpen) return;
     final raw = _mealsBox.get(mealId);
     if (raw is Map) {
       final meal = MealItem.fromMap(raw);
@@ -717,6 +732,7 @@ class StorageService {
       _mealsSubscription = ref.onValue.listen((event) async {
         final raw = event.snapshot.value;
         if (raw is Map) {
+          if (!_mealsBox.isOpen) return;
           for (final entry in raw.entries) {
             if (entry.value is Map) {
               final meal = MealItem.fromMap(entry.value as Map);
@@ -739,6 +755,7 @@ class StorageService {
   StreamSubscription? _storiesSubscription;
 
   List<FamilyStory> getActiveStories() {
+    if (!_storiesBox.isOpen) return [];
     final list = <FamilyStory>[];
     final now = DateTime.now();
     for (final key in _storiesBox.keys) {
@@ -846,6 +863,7 @@ class StorageService {
   // --- Passive Wi-Fi Radar Arrivals ---
 
   List<Map<String, dynamic>> getArrivalEvents() {
+    if (!_arrivalEventsBox.isOpen) return [];
     final list = <Map<String, dynamic>>[];
     for (final key in _arrivalEventsBox.keys) {
       final raw = _arrivalEventsBox.get(key);

@@ -60,9 +60,16 @@ class DiscoveryService {
   bool _isStarted = false;
   bool get isStarted => _isStarted;
 
-  Future<Map<String, String>> _getLocalNetworkInfo() async {
-    String localIp = '127.0.0.1';
-    String broadcastIp = '255.255.255.255';
+  String? _cachedIp;
+  String? _cachedBroadcast;
+
+  /// Récupère l'IP locale et l'adresse de broadcast avec mise en cache anti-drain de batterie
+  Future<Map<String, String>> _getLocalNetworkInfo({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedIp != null && _cachedBroadcast != null) {
+      return {'ip': _cachedIp!, 'broadcast': _cachedBroadcast!};
+    }
+    String localIp = _cachedIp ?? '127.0.0.1';
+    String broadcastIp = _cachedBroadcast ?? '255.255.255.255';
     try {
       final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
       for (final interface in interfaces) {
@@ -73,6 +80,8 @@ class DiscoveryService {
             if (parts.length == 4) {
               broadcastIp = '${parts[0]}.${parts[1]}.${parts[2]}.255';
             }
+            _cachedIp = localIp;
+            _cachedBroadcast = broadcastIp;
             return {'ip': localIp, 'broadcast': broadcastIp};
           }
         }
@@ -80,6 +89,8 @@ class DiscoveryService {
     } catch (e) {
       debugPrint('Erreur obtention network info: $e');
     }
+    _cachedIp = localIp;
+    _cachedBroadcast = broadcastIp;
     return {'ip': localIp, 'broadcast': broadcastIp};
   }
 
@@ -90,6 +101,9 @@ class DiscoveryService {
     String? mode,
   }) async {
     _isStarted = true;
+    // Initialiser le cache réseau au démarrage
+    await _getLocalNetworkInfo(forceRefresh: true);
+
     // 1. Start Bonsoir mDNS local broadcast & discovery (Offline-First LAN)
     await _startMdns(myName: myName, myDeviceId: myDeviceId);
 

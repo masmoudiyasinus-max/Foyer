@@ -69,12 +69,16 @@ class FamilyStory {
 
   factory FamilyStory.fromMap(Map<dynamic, dynamic> map) {
     final rawBlocks = map['textBlocks'] ?? map['textElements'];
+    final List<dynamic> blocksList = rawBlocks is List
+        ? rawBlocks
+        : (rawBlocks is Map ? rawBlocks.values.toList() : []);
     return FamilyStory(
       id: map['id']?.toString() ?? '',
       authorId: map['authorId']?.toString() ?? '',
       authorName: map['authorName']?.toString() ?? 'Membre',
       imagePath: map['imagePath']?.toString(),
-      textBlocks: (rawBlocks as List? ?? [])
+      textBlocks: blocksList
+          .where((b) => b is Map)
           .map((b) => StoryTextBlock.fromMap(b as Map))
           .toList(),
       createdAt: DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now(),

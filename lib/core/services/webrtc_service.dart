@@ -39,8 +39,16 @@ class WebRtcService {
   }
 
   Future<void> setSpeakerphoneMode(bool enable) async {
-    await _audioRouter.setSpeakerphoneOn(enable);
-    await Helper.setSpeakerphoneOn(enable);
+    try {
+      await _audioRouter.setSpeakerphoneOn(enable);
+    } catch (e) {
+      developer.log('Error setting audio router speakerphone: $e', name: 'WebRtcService');
+    }
+    try {
+      await Helper.setSpeakerphoneOn(enable);
+    } catch (e) {
+      developer.log('Error setting WebRTC Helper speakerphone: $e', name: 'WebRtcService');
+    }
     await StorageService().setSpeakerphoneEnabled(enable);
   }
 
@@ -108,7 +116,11 @@ class WebRtcService {
       // Ensure speakerphone or earpiece mode is respected and physical volume ceiling is applied
       final speakerEnabled = StorageService().isSpeakerphoneEnabled;
       await _audioRouter.setSpeakerphoneOn(speakerEnabled);
-      await Helper.setSpeakerphoneOn(speakerEnabled);
+      try {
+        await Helper.setSpeakerphoneOn(speakerEnabled);
+      } catch (e) {
+        developer.log('Helper.setSpeakerphoneOn error: $e', name: 'WebRtcService');
+      }
       await _audioRouter.setVolumeCeiling(_audioCeiling);
 
       // Listen for hardware Focus Mode transitions to immediately cut active voice streams
@@ -138,7 +150,11 @@ class WebRtcService {
       _setCallState(CallState.transmitting);
       final speakerEnabled = StorageService().isSpeakerphoneEnabled;
       await _audioRouter.setSpeakerphoneOn(speakerEnabled);
-      await Helper.setSpeakerphoneOn(speakerEnabled);
+      try {
+        await Helper.setSpeakerphoneOn(speakerEnabled);
+      } catch (e) {
+        developer.log('Helper.setSpeakerphoneOn error: $e', name: 'WebRtcService');
+      }
     } catch (e) {
       developer.log('Error acquiring hardware mic: $e', name: 'WebRtcService');
     }
@@ -154,6 +170,9 @@ class WebRtcService {
       }
     }
     _setCallState(CallState.connected);
+    if (_remoteStreams.isEmpty) {
+      _audioRouter.resetAudioMode();
+    }
   }
 
   /// Start listening for incoming WebRTC signaling and Chime alerts via Local HTTP (port 8889) and Firebase
@@ -511,7 +530,11 @@ class WebRtcService {
           onRemoteStreamAdded?.call(peerId, stream);
           final speakerEnabled = StorageService().isSpeakerphoneEnabled;
           _audioRouter.setSpeakerphoneOn(speakerEnabled);
-          Helper.setSpeakerphoneOn(speakerEnabled);
+          try {
+            Helper.setSpeakerphoneOn(speakerEnabled);
+          } catch (e) {
+            developer.log('Helper.setSpeakerphoneOn error: $e', name: 'WebRtcService');
+          }
           _audioRouter.setVolumeCeiling(_audioCeiling);
         }
       };
@@ -617,7 +640,11 @@ class WebRtcService {
           onRemoteStreamAdded?.call(fromId, stream);
           final speakerEnabled = StorageService().isSpeakerphoneEnabled;
           _audioRouter.setSpeakerphoneOn(speakerEnabled);
-          Helper.setSpeakerphoneOn(speakerEnabled);
+          try {
+            Helper.setSpeakerphoneOn(speakerEnabled);
+          } catch (e) {
+            developer.log('Helper.setSpeakerphoneOn error: $e', name: 'WebRtcService');
+          }
           _audioRouter.setVolumeCeiling(_audioCeiling);
         }
       };
@@ -923,6 +950,7 @@ class WebRtcService {
     _pendingIceCandidates.clear();
     setMicMute(true);
     _setCallState(CallState.idle);
+    await _audioRouter.resetAudioMode();
   }
 
   /// Handle Focus Mode transitions: immediately sever active calls upon activation
