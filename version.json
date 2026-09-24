@@ -1,0 +1,7 @@
+{
+  "versionCode": 8,
+  "versionName": "1.0.7",
+  "minRequiredVersionCode": 7,
+  "apkUrl": "https://github.com/masmoudiyasinus-max/Foyer/releases/download/v1.0.7/Foyer_v1.0.7.apk",
+  "releaseNotes": "Mise à jour majeure : Plafonnement matériel anti-cris sur tous les flux, commutateur haut-parleur/écouteur, synchronisation temps réel des profils, et timeline chronologique unifiée."
+}
